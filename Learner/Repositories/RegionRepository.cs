@@ -28,7 +28,7 @@ namespace Learner.Repositories
                 return null;
             }
             learnerDBContext.Regions.Remove(region);
-            learnerDBContext.SaveChangesAsync();
+            await learnerDBContext.SaveChangesAsync();
             return region;
         }
 
