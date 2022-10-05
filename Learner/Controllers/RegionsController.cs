@@ -17,6 +17,7 @@ namespace Learner.Controllers
             this.regionRepository = regionRepository;
             this.mapper = mapper;
         }
+       
         [HttpGet]
         public async Task<IActionResult> GetAllRegion()
         {
@@ -47,6 +48,13 @@ namespace Learner.Controllers
         [HttpPost]
         public async Task<IActionResult> AddRegionAsync(Models.DTO.AddRegionRequest addRegionRequest)
         {
+
+            //Validate
+            if (!ValidateAddRegionAsync(addRegionRequest))
+            {
+                return BadRequest(ModelState);
+            }
+
             //Request (DTO) to Domain model
             var region = new Models.Domain.Region()
             {
@@ -132,5 +140,32 @@ namespace Learner.Controllers
             //Return OK
             return Ok(regionDTO);
         }
+
+        
+        private bool ValidateAddRegionAsync(Models.DTO.AddRegionRequest addRegionRequest)
+        {
+            if (addRegionRequest == null)
+            {
+                return false;
+            }
+            if (string.IsNullOrEmpty(addRegionRequest.Code))
+            {
+                ModelState.AddModelError(nameof(addRegionRequest.Code), $"Code cannot have space or be empty");
+            }
+
+            if (string.IsNullOrEmpty(addRegionRequest.Name))
+            {
+                ModelState.AddModelError(nameof(addRegionRequest.Name), $"Name cannot have space or be empty");
+            }
+
+            if (ModelState.ErrorCount>0)
+            {
+                return false;
+            }
+            return true;
+        }
+        
     }
+
+
 }

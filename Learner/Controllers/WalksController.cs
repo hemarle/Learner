@@ -9,10 +9,14 @@ namespace Learner.Controllers
     public class WalksController : Controller
     {
         private readonly IWalkRepository walkRepository;
+        private readonly IRegionRepository regionRepository;
+        private readonly IWalkDifficultys walkDifficultys;
 
-        public WalksController(IWalkRepository walkRepository)
+        public WalksController(IWalkRepository walkRepository, IRegionRepository regionRepository, IWalkDifficultys walkDifficultys)
         {
             this.walkRepository = walkRepository;
+            this.regionRepository = regionRepository;
+            this.walkDifficultys = walkDifficultys;
         }
         [HttpGet]
 
@@ -40,36 +44,33 @@ namespace Learner.Controllers
         //[Route("{id:guid}")]
         public async Task<IActionResult> CreateWalk(Learner.Models.DTO.Walk.AddWalk addWalk)
         {
-            //Convert DTO to domain
-            /* var body = new Models.Domain.Walk()
-             {
-                 Name = addWalk.Name,
-                 Length = addWalk.Length,
-             };
+            var validateWalk = await ValidateWalks(addWalk);
 
-             var response =await walkRepository.CreateWalk(body);
-
-             //Convert domain to DTO
-             var responseDTO = new Learner.Models.DTO.Walk.Walk()
-             {
-                 Id = response.Id,
-             Name=response.Name,
-             Length=response.Length,
-
-             };
-
- */
+            if (! (validateWalk))
+            {
+                return BadRequest(ModelState);
+            }
+            
             var walk = new Models.Domain.Walk()
             {
                 Length = addWalk.Length,
-                regionID = addWalk.regionID,
                 Name = addWalk.Name,
+                regionID = addWalk.regionID,
                 WalkDifficultyID = addWalk.WalkDifficultyID
 
             };
             var response = await walkRepository.CreateWalk(walk);
 
-            return CreatedAtAction(nameof(GetWalkByID), new { id = response.Id }, response);
+            var responseDTO = new Learner.Models.DTO.Walk.AddWalk()
+            {
+                regionID= response.regionID,
+                Name = response.Name,   
+                WalkDifficultyID = response.WalkDifficultyID,
+                Length=response.Length,
+                
+            };
+
+            return CreatedAtAction(nameof(GetWalkByID), new { id = response.Id }, responseDTO);
         }
 
         [HttpPut]
@@ -111,5 +112,32 @@ namespace Learner.Controllers
             return Ok(request);
 
         }
+        #region Private
+        private async Task<bool> ValidateWalks(Learner.Models.DTO.Walk.AddWalk addWalk)
+        {
+            var allRegions = await regionRepository.GetRegion(addWalk.regionID);
+            var allWalksDifficultys = await walkDifficultys.GetByID(addWalk.WalkDifficultyID);
+            if (allRegions == null)
+            {
+                ModelState.AddModelError("Region Id", "Region Id doesn't exist");
+            }
+            if (allWalksDifficultys == null)
+            {
+                ModelState.AddModelError("WalkDifficulty", "WalkDifficulty Id doesn't exist");
+            }
+            if (ModelState.ErrorCount > 0)
+            {
+                return false;
+            }
+
+            return true;
+
+
+
+        }
+        #endregion
     }
+
+
+
 }
